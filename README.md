@@ -43,7 +43,7 @@ Full example is available under [examples/basic](/examples/basic) directory.
 
 ## Using docker
 
-You can use muxc with docker, just run: `docker run --rm -t -v $(pwd):/src -w /src muxc -f <path-to-yaml-file>`. As mentioned above,
+You can use muxc with docker, just run: `docker run --rm -t -v $(pwd):/src -w /src enolgor/muxc -f <path-to-yaml-file>`. As mentioned above,
 you can omit passing `-f ...` if using `muxc.yaml` as your definition filename.
 
 ## YAML Definition Syntax example
