@@ -1,0 +1,18 @@
+routes:
+  - use: #middlewares to apply to all paths of this route group, should be of type func(next http.HandlerFunc) http.HandlerFunc
+    - Middleware(middlewares.RequestID) #Middleware() helper converts func(http.Handler) http.Handler to the HandlerFunc equivalent
+    - Middleware(middlewares.Logger)
+    base: /api/v1 #base path to prefix all paths of this route group
+    paths: #semi-colon separated path/handler/middleware definition: <pattern> ; <handler>; <middlewares (comma separated, optional)>
+      - GET  /pet            ;handlers.ListPets(ctrl)     ;contentJson
+      - GET /pet/{id}       ;handlers.ReadPet(ctrl)      ;contentJson
+      - PUT /pet            ;handlers.CreatePet(ctrl)    ;acceptJson, contentJson
+      - POST /pet           ;handlers.UpdatePet(ctrl)    ;contentJson
+      - DELETE /pet         ;handlers.DeletePet(ctrl)
+      
+# middlewares are applied ordered in terms of how close they are to the handler, in the PUT path of this example that will be:
+# - 1st. RequestID
+# - 2nd. Logger
+# - 3rd. contentJson
+# - 4th. acceptJson
+# finally the handler will be called

@@ -6,9 +6,11 @@ import (
 	"io"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"text/template"
 
+	"github.com/enolgor/muxc/muxc/merge"
 	"gopkg.in/yaml.v3"
 )
 
@@ -35,6 +37,8 @@ type ParsedPath struct {
 	Middlewares []string
 }
 
+var isEmpty func(s string) bool = func(s string) bool { return s == "" }
+
 func (rp RoutePath) Parse() (parsed ParsedPath, err error) {
 	parts := strings.Split(string(rp), ";")
 	if len(parts) < 2 {
@@ -47,6 +51,7 @@ func (rp RoutePath) Parse() (parsed ParsedPath, err error) {
 	}
 	parsed.Pattern = strings.TrimSpace(parts[0])
 	pattern_parts := strings.Split(parsed.Pattern, " ")
+	pattern_parts = slices.DeleteFunc(pattern_parts, isEmpty)
 	if len(pattern_parts) > 2 {
 		err = fmt.Errorf("invalid path '%s', pattern has more than 2 parts", string(rp))
 		return
@@ -111,8 +116,12 @@ func init() {
 }
 
 func Generate(sourceFile string, cfgFile io.Reader, basedir string) error {
-	var cfg *Conf
 	var err error
+	var cfg *Conf
+	cfgFile, err = merge.MergeYaml(sourceFile, cfgFile, basedir)
+	if err != nil {
+		return err
+	}
 	if cfg, err = parseConf(cfgFile); err != nil {
 		return err
 	}
