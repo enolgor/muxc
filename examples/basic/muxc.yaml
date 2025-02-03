@@ -5,6 +5,8 @@ imports: #any package that should be imported by the routes file, those can be u
   - "github.com/enolgor/muxc/examples/basic/controllers"
   - "github.com/enolgor/muxc/examples/basic/handlers"
   - "github.com/enolgor/muxc/examples/basic/middlewares"
+  - "github.com/enolgor/muxc/middlewares/logger"
+  - "log/slog"
 
 args: #arguments to pass to the mux configuration function
   ctrl: controllers.Controller
@@ -12,6 +14,7 @@ args: #arguments to pass to the mux configuration function
 vars: #variables to declare inside the mux configuration function, should be used to declare aliases to long middleware definitions
   contentJson: Middleware(middlewares.SetHeader("Content-Type", "application/json"))
   acceptJson: Middleware(middlewares.SetHeader("Accept", "application/json"))
+  json: stack(contentJson, acceptJson)
+  logger: logger.New(slog.Default(), logger.InternalServerError(slog.LevelError), logger.BadRequest(slog.LevelWarn))
 
-#include v1.yaml file
 !include v1.yaml

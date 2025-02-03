@@ -1,14 +1,12 @@
-FROM golang:1.22-alpine AS build
+FROM golang:1.23-alpine AS build
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+COPY ./ ./
 
-RUN go mod download
+ENTRYPOINT ["/bin/sh"]
 
-COPY . .
-
-RUN go build -o /muxc main.go
+RUN cd muxc && go build -o /muxc .
 
 FROM scratch
 

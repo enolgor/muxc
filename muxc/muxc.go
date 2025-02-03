@@ -1,4 +1,4 @@
-package muxc
+package main
 
 import (
 	"embed"
@@ -10,7 +10,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/enolgor/muxc/muxc/merge"
 	"gopkg.in/yaml.v3"
 )
 
@@ -115,19 +114,18 @@ func init() {
 	)
 }
 
-func Generate(sourceFile string, cfgFile io.Reader, basedir string) error {
-	var err error
-	var cfg *Conf
-	cfgFile, err = merge.MergeYaml(sourceFile, cfgFile, basedir)
+func Generate(yamlFile *MultiYamlFile) error {
+	cfgFile, err := yamlFile.Resolve()
 	if err != nil {
 		return err
 	}
+	var cfg *Conf
 	if cfg, err = parseConf(cfgFile); err != nil {
 		return err
 	}
-	cfg.SourceFile = path.Base(sourceFile)
+	cfg.SourceFile = path.Base(yamlFile.SourceFile)
 	cfg.MuxcVersion = version
-	if err = createRoutesFile(cfg, basedir); err != nil {
+	if err = createRoutesFile(cfg, yamlFile.BaseDir); err != nil {
 		return err
 	}
 	return nil

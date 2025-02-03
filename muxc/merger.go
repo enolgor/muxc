@@ -1,4 +1,4 @@
-package merge
+package main
 
 import (
 	"bufio"
@@ -13,22 +13,34 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func MergeYaml(sourceFile string, cfgFile io.Reader, basedir string) (io.Reader, error) {
-	yamlFile, err := resolveIncludes(path.Base(sourceFile), cfgFile, basedir, nil)
+type MultiYamlFile struct {
+	BaseDir    string
+	SourceFile string
+	FilePath   string
+	data       []byte
+	decoded    map[string]any
+	includes   []*MultiYamlFile
+}
+
+func NewMultiYamlFile(sourceFile string, cfgFile io.Reader, basedir string) (*MultiYamlFile, error) {
+	file, err := resolveIncludes(path.Base(sourceFile), cfgFile, basedir, nil)
 	if err != nil {
 		return nil, err
 	}
-	return yamlFile.Resolve()
+	file.SourceFile = sourceFile
+	file.BaseDir = basedir
+	return file, err
 }
 
-type YamlFile struct {
-	FilePath string
-	Data     []byte
-	decoded  map[string]any
-	Includes []*YamlFile
+func (yf *MultiYamlFile) GetAllFilePaths() []string {
+	paths := []string{yf.FilePath}
+	for i := range yf.includes {
+		paths = append(paths, yf.includes[i].GetAllFilePaths()...)
+	}
+	return paths
 }
 
-func (yf *YamlFile) Resolve() (io.Reader, error) {
+func (yf *MultiYamlFile) Resolve() (io.Reader, error) {
 	if err := yf.decode(); err != nil {
 		return nil, err
 	}
@@ -41,45 +53,29 @@ func (yf *YamlFile) Resolve() (io.Reader, error) {
 	return buffer, nil
 }
 
-func (yf *YamlFile) merge() map[string]any {
-	for i := range yf.Includes {
-		yf.decoded = mergeMaps(yf.decoded, yf.Includes[i].merge())
+func (yf *MultiYamlFile) merge() map[string]any {
+	for i := range yf.includes {
+		yf.decoded = mergeMaps(yf.decoded, yf.includes[i].merge())
 	}
 	return yf.decoded
 }
 
-func (yf *YamlFile) decode() error {
+func (yf *MultiYamlFile) decode() error {
 	yf.decoded = map[string]any{}
-	if err := yaml.Unmarshal(yf.Data, &yf.decoded); err != nil {
+	if err := yaml.Unmarshal(yf.data, &yf.decoded); err != nil {
 		return err
 	}
-	for i := range yf.Includes {
-		if err := yf.Includes[i].decode(); err != nil {
+	for i := range yf.includes {
+		if err := yf.includes[i].decode(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (yf *YamlFile) String() string {
-	buffer := &bytes.Buffer{}
-	fmt.Fprintf(buffer, "-----------------------------\n")
-	fmt.Fprintf(buffer, "File: %s\n", yf.FilePath)
-	fmt.Fprintf(buffer, "Includes: ")
-	for i := range yf.Includes {
-		fmt.Fprintf(buffer, "%s ", yf.Includes[i].FilePath)
-	}
-	fmt.Fprintf(buffer, "\n-----------------------------\n")
-	fmt.Fprintf(buffer, "%s\nEOF\n\n", string(yf.Data))
-	for i := range yf.Includes {
-		fmt.Fprint(buffer, yf.Includes[i])
-	}
-	return buffer.String()
-}
-
 var includeMatcher *regexp.Regexp = regexp.MustCompile(`^!include "*([^"]+)"*$`)
 
-func resolveIncludes(filename string, file io.Reader, basedir string, alreadyIncluded []string) (*YamlFile, error) {
+func resolveIncludes(filename string, file io.Reader, basedir string, alreadyIncluded []string) (*MultiYamlFile, error) {
 	if alreadyIncluded == nil {
 		alreadyIncluded = []string{}
 	}
@@ -100,10 +96,10 @@ func resolveIncludes(filename string, file io.Reader, basedir string, alreadyInc
 			buffer.WriteString(line + "\n")
 		}
 	}
-	yamlFile := &YamlFile{
+	yamlFile := &MultiYamlFile{
 		FilePath: filePath,
-		Data:     buffer.Bytes(),
-		Includes: []*YamlFile{},
+		data:     buffer.Bytes(),
+		includes: []*MultiYamlFile{},
 	}
 	for i := range includes {
 		f, err := os.Open(path.Join(basedir, includes[i]))
@@ -115,7 +111,7 @@ func resolveIncludes(filename string, file io.Reader, basedir string, alreadyInc
 		if err != nil {
 			return nil, err
 		}
-		yamlFile.Includes = append(yamlFile.Includes, included)
+		yamlFile.includes = append(yamlFile.includes, included)
 	}
 	return yamlFile, nil
 }

@@ -19,6 +19,15 @@ func chain(f http.HandlerFunc, middlewares ...func(http.HandlerFunc) http.Handle
 	return f
 }
 
+func stack(mws ...func(http.HandlerFunc) http.HandlerFunc) func(http.HandlerFunc) http.HandlerFunc {
+	return func(f http.HandlerFunc) http.HandlerFunc {
+		for _, m := range mws {
+			f = m(f)
+		}
+		return f
+	}
+}
+
 func Middleware(m func(http.Handler) http.Handler) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return m(next).ServeHTTP

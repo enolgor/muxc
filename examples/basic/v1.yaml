@@ -1,18 +1,27 @@
 routes:
   - use: #middlewares to apply to all paths of this route group, should be of type func(next http.HandlerFunc) http.HandlerFunc
     - Middleware(middlewares.RequestID) #Middleware() helper converts func(http.Handler) http.Handler to the HandlerFunc equivalent
-    - Middleware(middlewares.Logger)
+    - logger
     base: /api/v1 #base path to prefix all paths of this route group
     paths: #semi-colon separated path/handler/middleware definition: <pattern> ; <handler>; <middlewares (comma separated, optional)>
       - GET  /pet            ;handlers.ListPets(ctrl)     ;contentJson
       - GET /pet/{id}       ;handlers.ReadPet(ctrl)      ;contentJson
-      - PUT /pet            ;handlers.CreatePet(ctrl)    ;acceptJson, contentJson
+      - PUT /pet            ;handlers.CreatePet(ctrl)    ;json
       - POST /pet           ;handlers.UpdatePet(ctrl)    ;contentJson
       - DELETE /pet         ;handlers.DeletePet(ctrl)
-      
+  - base: /api/v2
+    use:
+      - logger
+    paths:
+      - GET /pet   ;handlers.Test(ctrl) ; middlewares.Recover, contentJson, middlewares.InterceptErrorStatus, middlewares.InterceptContentSniffer
 # middlewares are applied ordered in terms of how close they are to the handler, in the PUT path of this example that will be:
 # - 1st. RequestID
 # - 2nd. Logger
 # - 3rd. contentJson
 # - 4th. acceptJson
 # finally the handler will be called
+
+# in case of interceptors, they intercept the response of the handler, so they will be called backwards, in the example above:
+# - 1st. contentJson
+# - 2nd. content sniffer interceptor
+# - 3rd. error status interceptor

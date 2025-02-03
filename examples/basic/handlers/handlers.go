@@ -9,6 +9,20 @@ import (
 	"github.com/enolgor/muxc/examples/basic/controllers"
 )
 
+func Test(ctrl controllers.Controller) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		// pets, err := ctrl.ListPets()
+		// if err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+		// enc := json.NewEncoder(w)
+		panic("I panicked")
+		http.Error(w, "some error", http.StatusInternalServerError)
+		// enc.Encode(pets)
+	}
+}
+
 func ListPets(ctrl controllers.Controller) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		pets, err := ctrl.ListPets()
