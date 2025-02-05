@@ -24,7 +24,7 @@ type JwtSession[T any] struct {
 	headerName         string
 }
 
-func NewJwtSession[T any](key []byte, expiration time.Duration, opts ...Option[T]) *JwtSession[T] {
+func NewJwtSession[T any](key []byte, expiration time.Duration, opts ...Option) *JwtSession[T] {
 	jwts := &JwtSession[T]{
 		key:                key,
 		expiration:         expiration,
@@ -35,7 +35,7 @@ func NewJwtSession[T any](key []byte, expiration time.Duration, opts ...Option[T
 		headerName:         "Authorization",
 	}
 	for _, opt := range opts {
-		opt(jwts)
+		opt((*JwtSession[any])(jwts))
 	}
 	return jwts
 }
