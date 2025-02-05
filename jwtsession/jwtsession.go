@@ -80,7 +80,7 @@ func (jwts *JwtSession[T]) ForgeHeader(session T) (string, error) {
 }
 
 func (jwts *JwtSession[T]) GetSessionFromCookie(req *http.Request) (*T, error) {
-	if cookie, err := req.Cookie(jwts.sessionCookieName); err == nil {
+	if cookie, err := req.Cookie(jwts.sessionCookieName); err != nil {
 		return nil, errors.New("session cookie not found")
 	} else {
 		return jwts.GetSessionFromToken(cookie.Value)
