@@ -14,12 +14,13 @@ import (
 )
 
 type OIDCAuthenticator[T any] struct {
-	oidcProvider     *oidc.Provider
-	oauth2Config     oauth2.Config
-	scopes           []string
-	stateCookieTTL   time.Duration
-	stateCookieHttps bool
-	stateCookieName  string
+	oidcProvider            *oidc.Provider
+	oauth2Config            oauth2.Config
+	scopes                  []string
+	stateCookieTTL          time.Duration
+	stateCookieHttps        bool
+	stateCookieName         string
+	stateCookieSameSiteMode http.SameSite
 }
 
 type Config struct {
@@ -32,9 +33,10 @@ type Config struct {
 func NewAuthenticator[T any](cfg *Config, opts ...Option) (*OIDCAuthenticator[T], error) {
 	var err error
 	auth := &OIDCAuthenticator[T]{
-		scopes:           []string{oidc.ScopeOpenID, "profile", "email"},
-		stateCookieTTL:   15 * time.Minute,
-		stateCookieHttps: true,
+		scopes:                  []string{oidc.ScopeOpenID, "profile", "email"},
+		stateCookieTTL:          15 * time.Minute,
+		stateCookieHttps:        true,
+		stateCookieSameSiteMode: http.SameSiteLaxMode,
 	}
 	if auth.stateCookieName, err = randomString(10); err != nil {
 		return nil, err
@@ -63,7 +65,7 @@ func (auth *OIDCAuthenticator[T]) LoginRedirect(w http.ResponseWriter, req *http
 		Path:     "/",
 		Secure:   auth.stateCookieHttps,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: auth.stateCookieSameSiteMode,
 	}
 	http.SetCookie(w, cookie)
 	http.Redirect(w, req, auth.oauth2Config.AuthCodeURL(state), http.StatusTemporaryRedirect)
@@ -102,7 +104,7 @@ func (auth *OIDCAuthenticator[T]) Callback(w http.ResponseWriter, req *http.Requ
 		Path:     "/",
 		Secure:   auth.stateCookieHttps,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: auth.stateCookieSameSiteMode,
 	}
 	http.SetCookie(w, cookie)
 	return nil

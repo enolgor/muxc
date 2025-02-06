@@ -15,24 +15,26 @@ type Claims[T any] struct {
 }
 
 type JwtSession[T any] struct {
-	key                []byte
-	expiration         time.Duration
-	sessionCookieHttps bool
-	sessionCookieName  string
-	parser             *jwt.Parser
-	bearerToken        bool
-	headerName         string
+	key                       []byte
+	expiration                time.Duration
+	sessionCookieHttps        bool
+	sessionCookieName         string
+	parser                    *jwt.Parser
+	bearerToken               bool
+	headerName                string
+	sessionCookieSameSiteMode http.SameSite
 }
 
 func NewJwtSession[T any](key []byte, expiration time.Duration, opts ...Option) *JwtSession[T] {
 	jwts := &JwtSession[T]{
-		key:                key,
-		expiration:         expiration,
-		sessionCookieHttps: true,
-		sessionCookieName:  "session",
-		parser:             jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name})),
-		bearerToken:        true,
-		headerName:         "Authorization",
+		key:                       key,
+		expiration:                expiration,
+		sessionCookieHttps:        true,
+		sessionCookieName:         "session",
+		sessionCookieSameSiteMode: http.SameSiteLaxMode,
+		parser:                    jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name})),
+		bearerToken:               true,
+		headerName:                "Authorization",
 	}
 	for _, opt := range opts {
 		opt((*JwtSession[any])(jwts))
@@ -66,7 +68,7 @@ func (jwts *JwtSession[T]) ForgeCookie(session T) (*http.Cookie, error) {
 		Path:     "/",
 		Secure:   jwts.sessionCookieHttps,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: jwts.sessionCookieSameSiteMode,
 	}
 	return cookie, nil
 }
@@ -120,6 +122,6 @@ func (jwts *JwtSession[T]) ExpireCookie() *http.Cookie {
 		Path:     "/",
 		Secure:   jwts.sessionCookieHttps,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: jwts.sessionCookieSameSiteMode,
 	}
 }

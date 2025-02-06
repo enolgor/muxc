@@ -1,6 +1,9 @@
 package oidc
 
-import "time"
+import (
+	"net/http"
+	"time"
+)
 
 type Option func(*OIDCAuthenticator[any])
 
@@ -25,5 +28,11 @@ func WithStateCookieHttps(https bool) Option {
 func WithStateCookieName(name string) Option {
 	return func(auth *OIDCAuthenticator[any]) {
 		auth.stateCookieName = name
+	}
+}
+
+func WithStateCookieSameSiteMode(mode http.SameSite) Option {
+	return func(auth *OIDCAuthenticator[any]) {
+		auth.stateCookieSameSiteMode = mode
 	}
 }

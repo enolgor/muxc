@@ -1,5 +1,7 @@
 package jwtsession
 
+import "net/http"
+
 type Option func(*JwtSession[any])
 
 func WithSessionCookieHttps(https bool) Option {
@@ -23,5 +25,11 @@ func WithBearerToken(bearer bool) Option {
 func WithHeaderName(name string) Option {
 	return func(jwts *JwtSession[any]) {
 		jwts.headerName = name
+	}
+}
+
+func WithSessionCookieSameSiteMode(mode http.SameSite) Option {
+	return func(auth *JwtSession[any]) {
+		auth.sessionCookieSameSiteMode = mode
 	}
 }
